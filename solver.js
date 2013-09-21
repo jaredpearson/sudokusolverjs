@@ -1,93 +1,121 @@
 (function(){
 "use strict";
 
-var rowSize = 2, columnSize = rowSize;
-var values = [1, 2];
+/**
+ * Creates a matrix for a latin square. 
+ *
+ * A latin square is a matix of numbers where each number only occurs
+ * once in a row and once in a column.
+ */
+function createLatinSquareMatrix(dimension) {
 
-function createConstraints() {
-	var rowIndex, columnIndex, constraint,
-		constraintProto = {},
-		constraints = [];
+	function createConstraints(columnSize, rowSize, values) {
+		var rowIndex, columnIndex, constraint,
+			constraintProto = {},
+			constraints = [];
 
-	var cellConstraintSatisfies = function(choice) {
-		return this.columnIndex === choice.columnIndex && this.rowIndex === choice.rowIndex;
-	};
-	var index = 0;
+		var cellConstraintSatisfies = function(choice) {
+			return this.columnIndex === choice.columnIndex && this.rowIndex === choice.rowIndex;
+		};
+		var index = 0;
 
-	//a value must be in every cell
-	for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
-		for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
-			constraint = Object.create(constraintProto);
-			constraint.id = index++;
-			constraint.name = 'value must be in (' + columnIndex + ', ' + rowIndex + ')';
-			constraint.rowIndex = rowIndex;
-			constraint.columnIndex = columnIndex;
-			constraint.satisfies = cellConstraintSatisfies;
-			constraints.push(constraint);
+		//a value must be in every cell
+		for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
+			for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
+				constraint = Object.create(constraintProto);
+				constraint.id = index++;
+				constraint.name = 'value must be in (' + columnIndex + ', ' + rowIndex + ')';
+				constraint.rowIndex = rowIndex;
+				constraint.columnIndex = columnIndex;
+				constraint.satisfies = cellConstraintSatisfies;
+				constraints.push(constraint);
+			}
 		}
-	}
 
-	var columnConstraintSatisfies = function(choice) {
-		return this.value === choice.value && this.columnIndex === choice.columnIndex;
-	};
+		var columnConstraintSatisfies = function(choice) {
+			return this.value === choice.value && this.columnIndex === choice.columnIndex;
+		};
 
-	//each value must be in each column
-	for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
-		values.forEach(function(value) {
-			constraint = Object.create(constraintProto);
-			constraint.id = index++;
-			constraint.name = value + ' must be column ' + columnIndex;
-			constraint.columnIndex = columnIndex;
-			constraint.value = value;
-			constraint.satisfies = columnConstraintSatisfies;
-			constraints.push(constraint);
-		});
-	}
-
-	var rowConstraintSatisfies = function(choice) {
-		return this.value === choice.value && this.rowIndex === choice.rowIndex;
-	};
-
-	//each value must be in each row
-	for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
-		values.forEach(function(value) {
-			constraint = Object.create(constraintProto);
-			constraint.id = index++;
-			constraint.name = value + ' must be row ' + rowIndex;
-			constraint.rowIndex = rowIndex;
-			constraint.value = value;
-			constraint.satisfies = rowConstraintSatisfies;
-			constraints.push(constraint);
-		});
-	}
-	return constraints;
-};
-
-function createChoices() {
-	var choices = [],
-		choiceProto = {},
-		index = 0, 
-		columnIndex, 
-		rowIndex;
-
-	for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
-		for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
-			values.forEach(function(value){
-				var choice = Object.create(choiceProto);
-				choice.id = String.fromCharCode(97 + index);
-				choice.name = value + ' at (' + columnIndex + ', ' + rowIndex + ')';
-				choice.value = value;
-				choice.columnIndex = columnIndex;
-				choice.rowIndex = rowIndex;
-				choices.push(choice);
-				index++;
+		//each value must be in each column
+		for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
+			values.forEach(function(value) {
+				constraint = Object.create(constraintProto);
+				constraint.id = index++;
+				constraint.name = value + ' must be column ' + columnIndex;
+				constraint.columnIndex = columnIndex;
+				constraint.value = value;
+				constraint.satisfies = columnConstraintSatisfies;
+				constraints.push(constraint);
 			});
 		}
+
+		var rowConstraintSatisfies = function(choice) {
+			return this.value === choice.value && this.rowIndex === choice.rowIndex;
+		};
+
+		//each value must be in each row
+		for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
+			values.forEach(function(value) {
+				constraint = Object.create(constraintProto);
+				constraint.id = index++;
+				constraint.name = value + ' must be row ' + rowIndex;
+				constraint.rowIndex = rowIndex;
+				constraint.value = value;
+				constraint.satisfies = rowConstraintSatisfies;
+				constraints.push(constraint);
+			});
+		}
+		return constraints;
+	};
+
+	function createChoices(columnSize, rowSize, values) {
+		var choices = [],
+			choiceProto = {},
+			index = 0, 
+			columnIndex, 
+			rowIndex;
+
+		for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
+			for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
+				values.forEach(function(value){
+					var choice = Object.create(choiceProto);
+					choice.id = String.fromCharCode(97 + index);
+					choice.name = value + ' at (' + columnIndex + ', ' + rowIndex + ')';
+					choice.value = value;
+					choice.columnIndex = columnIndex;
+					choice.rowIndex = rowIndex;
+					choices.push(choice);
+					index++;
+				});
+			}
+		}
+
+		return choices;
 	}
 
-	return choices;
+	/**
+	 * builds the values array, starting with value 1 up to the dimension
+	 */
+	function buildValuesArray(dimension) {
+		var value, values = [];
+		for(value = 1; value < dimension + 1; value++) {
+			values.push(value);
+		}
+		return values;
+	}
+
+	var rowSize = dimension, 
+		columnSize = dimension,
+		values = buildValuesArray(dimension),
+		constraints = createConstraints(columnSize, rowSize, values),
+		choices = createChoices(columnSize, rowSize, values);
+
+	return createMatrix(constraints, choices);
 }
 
+/**
+ * Creates a new matrix from the given constraints and choices.
+ */
 function createMatrix(constraints, choices) {
 	var forEach = function(direction, f) {
 		var node = this, index = 0;
@@ -212,15 +240,6 @@ function createMatrix(constraints, choices) {
 	return matrix;
 }
 
-function withoutHeader(f) {
-	return function(node) {
-		if(node.header) {
-			return;
-		}
-		f.apply(this, arguments);
-	};
-}
-
 function cover(node) {
 	var columnHeader = node.columnHeader;
 
@@ -252,7 +271,7 @@ function uncover(node) {
 	var columnHeader = node.columnHeader;
 
 	//add the related cells back to the matrix
-	columnHeader.forEachUp(withoutHeader(function(upNode){
+	columnHeader.forEachUp(function(upNode){
 		if(upNode === columnHeader) {
 			return;
 		}
@@ -268,7 +287,7 @@ function uncover(node) {
 			//adjust the column header count
 			leftNode.columnHeader.nodeCount++;
 		});
-	}));
+	});
 
 	//add the column back to the headers
 	columnHeader.right.left = columnHeader;
@@ -375,9 +394,7 @@ function solve(matrix) {
 	return allSolutions;
 }
 
-var constraints = createConstraints();
-var choices = createChoices();
-var matrix = createMatrix(constraints, choices);
+var matrix = createLatinSquareMatrix(2);
 
 var solutions = solve(matrix);
 solutions.forEach(function(solution) {
