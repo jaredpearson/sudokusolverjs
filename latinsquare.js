@@ -72,7 +72,6 @@ function createConstraints(columnSize, rowSize, values) {
 function createChoices(columnSize, rowSize, values) {
 	var choices = [],
 		choiceProto = {},
-		index = 0, 
 		columnIndex, 
 		rowIndex;
 
@@ -85,7 +84,6 @@ function createChoices(columnSize, rowSize, values) {
 				choice.columnIndex = columnIndex;
 				choice.rowIndex = rowIndex;
 				choices.push(choice);
-				index++;
 			});
 		}
 	}
