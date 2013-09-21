@@ -106,8 +106,14 @@ function createLatinSquareMatrix(dimension) {
 
 	var rowSize = dimension, 
 		columnSize = dimension,
+
+		//create an array of values [1 .. n]
 		values = buildValuesArray(dimension),
+
+		//create all of the constraints for the latin square
 		constraints = createConstraints(columnSize, rowSize, values),
+
+		//create all of the choices for the latin square
 		choices = createChoices(columnSize, rowSize, values);
 
 	return createMatrix(constraints, choices);
@@ -117,33 +123,43 @@ function createLatinSquareMatrix(dimension) {
  * Creates a new matrix from the given constraints and choices.
  */
 function createMatrix(constraints, choices) {
-	var forEach = function(direction, f) {
+
+	/**
+	 * traverses a circular linked list starting with this node using the
+	 * given property. the f callback is invoked for each visit
+	 */
+	var forEach = function(property, f) {
 		var node = this, index = 0;
 		do {
 			f(node, index, this);
-			node = node[direction];
+			node = node[property];
 			index++;
 		} while(node !== this);
 	};
-	var setNode = function(prevProperty, nextProperty, node) {
+
+	/**
+	 * inserts a new node before this node within the given circular linked list.
+	 */
+	var insertNode = function(nextProperty, prevProperty, node) {
 		node[prevProperty] = this;
 		node[nextProperty] = this[nextProperty];
 		this[nextProperty][prevProperty] = node;
 		this[nextProperty] = node;
 	};
 
+	//prototype object for all nodes
 	var nodeProto = {
 		setUp: function(node) {
-			setNode.call(this, 'down', 'up', node);
+			insertNode.call(this, 'up', 'down', node);
 		},
 		setDown: function(node) {
-			setNode.call(this, 'up', 'down', node);
+			insertNode.call(this, 'down', 'up', node);
 		},
 		setLeft: function(node) {
-			setNode.call(this, 'right', 'left', node);
+			insertNode.call(this, 'left', 'right', node);
 		},
 		setRight: function(node) {
-			setNode.call(this, 'left', 'right', node);
+			insertNode.call(this, 'right', 'left', node);
 		},
 		forEachLeft: function(f) {
 			forEach.call(this, 'left', f);
@@ -158,6 +174,8 @@ function createMatrix(constraints, choices) {
 			forEach.call(this, 'down', f);
 		}
 	};
+
+	//factory method to create new nodes
 	var createNode = function() {
 		var node = Object.create(nodeProto);
 		node.up = node.down = node.left = node.right = node;
