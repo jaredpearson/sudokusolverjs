@@ -15,24 +15,23 @@ var exactcover = require('./exactcover');
  * Creates all of the constraints for the latin square
  */
 function createConstraints(columnSize, rowSize, values) {
-	var rowIndex, columnIndex, constraint,
+	var rowIndex, 
+		columnIndex, 
+		constraint,
 		constraintProto = {},
 		constraints = [];
 
 	var cellConstraintSatisfies = function(choice) {
 		return this.columnIndex === choice.columnIndex && this.rowIndex === choice.rowIndex;
 	};
-	var index = 0;
 
 	//a value must be in every cell
 	for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
 		for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
-			constraint = Object.create(constraintProto);
-			constraint.id = index++;
+			constraint = exactcover.createConstraint(cellConstraintSatisfies);
 			constraint.name = 'value must be in (' + columnIndex + ', ' + rowIndex + ')';
 			constraint.rowIndex = rowIndex;
 			constraint.columnIndex = columnIndex;
-			constraint.satisfies = cellConstraintSatisfies;
 			constraints.push(constraint);
 		}
 	}
@@ -44,12 +43,10 @@ function createConstraints(columnSize, rowSize, values) {
 	//each value must be in each column
 	for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
 		values.forEach(function(value) {
-			constraint = Object.create(constraintProto);
-			constraint.id = index++;
+			constraint = exactcover.createConstraint(columnConstraintSatisfies);
 			constraint.name = value + ' must be column ' + columnIndex;
 			constraint.columnIndex = columnIndex;
 			constraint.value = value;
-			constraint.satisfies = columnConstraintSatisfies;
 			constraints.push(constraint);
 		});
 	}
@@ -61,15 +58,14 @@ function createConstraints(columnSize, rowSize, values) {
 	//each value must be in each row
 	for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
 		values.forEach(function(value) {
-			constraint = Object.create(constraintProto);
-			constraint.id = index++;
+			constraint = exactcover.createConstraint(rowConstraintSatisfies);
 			constraint.name = value + ' must be row ' + rowIndex;
 			constraint.rowIndex = rowIndex;
 			constraint.value = value;
-			constraint.satisfies = rowConstraintSatisfies;
 			constraints.push(constraint);
 		});
 	}
+
 	return constraints;
 }
 
@@ -83,8 +79,7 @@ function createChoices(columnSize, rowSize, values) {
 	for(columnIndex = 0; columnIndex < columnSize; columnIndex++) {
 		for(rowIndex = 0; rowIndex < rowSize; rowIndex++) {
 			values.forEach(function(value){
-				var choice = Object.create(choiceProto);
-				choice.id = String.fromCharCode(97 + index);
+				var choice = exactcover.createChoice();
 				choice.name = value + ' at (' + columnIndex + ', ' + rowIndex + ')';
 				choice.value = value;
 				choice.columnIndex = columnIndex;

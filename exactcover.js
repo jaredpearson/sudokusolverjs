@@ -69,6 +69,43 @@ var createNode = function() {
 	return node;
 };
 
+var _idIndex = 0;
+function generateId(prefix) {
+	return (typeof prefix !== 'undefined' ? prefix : '') + (_idIndex++);
+}
+
+/**
+ * Creates a new choice
+ */
+exactcover.createChoice = function() {
+	return {
+		id: generateId('choice_')
+	}
+};
+
+/**
+ * prototype object for a contraint.
+ */
+var constraintProto = {
+	satisfies: function(choice) {
+		return false;
+	}
+};
+
+/**
+ * Creates a new constraint
+ * @param satisfies Optional function to set whether this constraint is 
+ * satisfied by a given choice. If not specified, then a function is always used.
+ */
+exactcover.createConstraint = function(satisfies) {
+	var constraint = Object.create(constraintProto);
+	constraint.id = generateId('constraint_');
+	if(satisfies) {
+		constraint.satisfies = satisfies;
+	}
+	return constraint;
+};
+
 /**
  * Creates a new matrix from the given constraints and choices.
  */
