@@ -32,6 +32,18 @@ var insertNode = function(nextProperty, prevProperty, node) {
 	this[nextProperty] = node;
 };
 
+
+/**
+ * Generates a unique ID with the given prefix
+ * @param prefix
+ */
+var generateId = (function() {
+	var _idIndex = 0;
+	return function(prefix) {
+		return (typeof prefix !== 'undefined' ? prefix : '') + (_idIndex++);
+	};
+}).call(this);
+
 /**
  * prototype object for all nodes
  */ 
@@ -69,11 +81,6 @@ var createNode = function() {
 	return node;
 };
 
-var _idIndex = 0;
-function generateId(prefix) {
-	return (typeof prefix !== 'undefined' ? prefix : '') + (_idIndex++);
-}
-
 /**
  * Creates a new choice
  */
@@ -82,6 +89,31 @@ exactcover.createChoice = function() {
 		id: generateId('choice_')
 	}
 };
+
+/**
+ * finds the first node corresponding to the choice
+ */
+function findChoiceNode(matrix, choice) {
+	var choiceNode;
+	matrix.forEachRight(function(right) {
+		if(matrix === right) {
+			return;
+		}
+
+		right.forEachDown(function(downNode) {
+
+			//TODO: fix this so that we can break from the for loop
+			if(typeof choiceNode !== 'undefined') {
+				return;
+			}
+
+			if(downNode.choice === choice) {
+				choiceNode = downNode;
+			}
+		});	
+	});
+	return choiceNode;
+}
 
 /**
  * prototype object for a contraint.
@@ -159,7 +191,6 @@ exactcover.createMatrix = function(constraints, choices) {
 				lastChoice[choice.id].setRight(node);
 			}
 			lastChoice[choice.id] = node;
-
 			lastNode = node;
 			index++;
 		});
@@ -176,12 +207,43 @@ exactcover.createMatrix = function(constraints, choices) {
 				if(node.header) {
 					return;
 				}
-				console.log(node.id + ': ' + node.constraint.id + ' * ' + node.choice.id);
+				console.log(node.id + ': ' + node.constraint.id + '(' + node.constraint.name + ') * ' + node.choice.id + '(' + node.choice.name + ')');
 			});
 		});
 	};
 	matrix.isEmpty = function() {
-		return this.right === this;
+		if(this.right === this) {
+			return true;
+		}
+
+		//if there is at least a column with a nodeCount higher than 0, then
+		//the matrix is not empty
+		var node = this.right;
+		while(node !== this) {
+			if(node.nodeCount > 0) {
+				return false;
+			}
+
+			node = node.right;
+		}
+
+		return true;
+	};
+	matrix.choices = choices.slice();
+	matrix.constraints = constraints.slice();
+	matrix.selectChoice = function(choice) {
+		var choiceNode = findChoiceNode(matrix, choice);
+		if(typeof choiceNode === 'undefined') {
+			console.warn('No choice node found');
+			return;
+		}
+
+		//when we select this choice, all other constraints
+		//corresponding to the choice are fulfilled. let's remove
+		//the other choices from the matrix
+		choiceNode.forEachRight(function(rightNode) {
+			cover(rightNode);
+		});
 	};
 
 	lastColumnHeader.setRight(matrix);
@@ -257,6 +319,9 @@ function findColumnWithLowestNumberOfNodes(matrix) {
 		if(column == matrix) {
 			return;
 		}
+		if(column.nodeCount === 0) {
+			return;
+		}
 
 		if(!lowestColumn || column.nodeCount < lowestColumn.nodeCount) {
 			lowestColumn = column;
@@ -269,7 +334,7 @@ function findColumnWithLowestNumberOfNodes(matrix) {
  * this function is recursively called to try and find solutions. the entry 
  * point is found within the solve method
  */
-function _solve(allSolutions, matrix, solution) {
+function _solve(maxSolutions, allSolutions, matrix, solution) {
 	if(!solution) {
 		solution = [];
 	}
@@ -278,7 +343,7 @@ function _solve(allSolutions, matrix, solution) {
 	//can print the solution and return
 	if(matrix.isEmpty()) {
 		allSolutions.push(solution.slice());
-		return;
+		return (allSolutions.length === maxSolutions) ? 1 : 0;
 	}
 
 	//choose a column with the lowest number of choices
@@ -311,7 +376,9 @@ function _solve(allSolutions, matrix, solution) {
 		});
 
 		//try to solve the smaller matrix
-		_solve(allSolutions, matrix, solution);
+		if(_solve(maxSolutions, allSolutions, matrix, solution) === 1) {
+			return;
+		}
 
 		solution.pop();
 
@@ -335,7 +402,7 @@ exactcover.solve = function(matrix) {
 	var allSolutions = [];
 
 	//start solving
-	_solve(allSolutions, matrix);
+	_solve(10, allSolutions, matrix);
 
 	return allSolutions;
 };
