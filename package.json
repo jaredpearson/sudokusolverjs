@@ -1,0 +1,17 @@
+{
+	"name": "sudokusolverjs",
+	"description": "Sudoku Solver",
+	"version": "1.0.0",
+	"dependencies": {},
+	"keywords": [],
+	"maintainers":[{
+		"name": "Jared Pearson"
+	}],
+	"scripts": {
+		"test": "make test"
+	},
+	"devDependencies": {
+		"mocha": "1.13.0",
+		"jshint": "2.1.11"
+	}
+}
