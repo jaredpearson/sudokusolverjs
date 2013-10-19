@@ -11,7 +11,7 @@ test:
 	@NODE_ENV=test ./node_modules/.bin/mocha -u tdd $(TESTS)
 
 lint:
-	@NODE_ENV=lint ./node_modules/.bin/jshint $(LIB)
+	@NODE_ENV=lint ./node_modules/.bin/jshint $(TESTS) $(LIB)
 
 clean:
 	rm -rf node_modules
